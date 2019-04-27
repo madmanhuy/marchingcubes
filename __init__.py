@@ -1,3 +1,10 @@
+from bpy.props import (StringProperty)
+import bpy
+import os
+from marching_cubes import MarchingCubes
+from marching_cubes_panel import MarchingCubesPanel
+from madmanhuy import read_dicom_image
+
 bl_info = {
     "name": "MarchingCubes",
     'author': 'Mandeep Bhutani, Maddy Placik, Huy Ha',
@@ -5,21 +12,17 @@ bl_info = {
     "category": "3D View"
 }
 
-if "bpy" in locals():
-    import imp
-    imp.reload(MarchingCubes)
-    imp.reload(MarchingCubesPanel)
-    imp.reload(read_dicom_image)
-    imp.reload(os)
-    print("Reloaded multifiles")
-else:
-    import bpy
-    from bpy.types import (Panel, Operator)
-    from bpy.props import (StringProperty)
-    import os
-    from madmanhuy import read_dicom_image
-    from marching_cubes import MarchingCubes
-    from marching_cubes_panel import MarchingCubesPanel
+# if "bpy" in locals():
+#     import imp
+#     imp.reload(MarchingCubes)
+#     imp.reload(MarchingCubesPanel)
+#     imp.reload(read_dicom_image)
+#     print("Reloaded multifiles")
+# else:
+#     from madmanhuy import read_dicom_image
+#     from marching_cubes import MarchingCubes
+#     from marching_cubes_panel import MarchingCubesPanel
+#     print("Imported multifiles")
 
 
 def register():

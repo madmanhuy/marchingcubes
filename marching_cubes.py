@@ -54,21 +54,3 @@ class MarchingCubes(Operator):
                     obj.data.materials.append(mat)
 
         return {'FINISHED'}
-
-
-def register():
-    bpy.utils.register_module(__name__)
-    bpy.types.Scene.images_dir_prop = bpy.props.StringProperty(
-        name="Image Directory",
-        description="Filepath to folder containing CT/MRI scans for Marching Cube operator",
-        default=""
-    )
-
-
-def unregister():
-    bpy.utils.unregister_module(__name__)
-    del bpy.types.Scene.images_dir_prop
-
-
-if __name__ == "__main__":
-    register()
