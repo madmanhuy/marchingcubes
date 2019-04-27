@@ -24,9 +24,9 @@ def read_dicom_image(path):
 
 
 def main():
-    path = read_dicom_image('C:/temp/scan (197).dcm')
+    path = read_dicom_image('C:/temp/scan.dcm')
     img = mpimg.imread(path)
-    plt.imshow(img)
+    plt.imshow(img, cmap='gray', vmin=0, vmax=1)
     plt.show()
 
 
