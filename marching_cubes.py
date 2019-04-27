@@ -1,31 +1,8 @@
 import bpy
-from bpy.types import (Panel, Operator)
+from bpy.types import (Operator)
 from bpy.props import (StringProperty)
 import os
-
-
-class MarchingCubesPanel(Panel):
-    bl_idname = "OBJECT_PT_marching_cubes"
-    bl_label = "Marching Cubes"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
-    bl_category = "Create"  # creates the addon panel in the create tab in tools region
-
-    path = ""
-
-    def draw(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.label(text="Construct 3D model from 2D scans")  # TODO add icon
-
-        row = layout.row()
-        row.label(text="Select a directory with CT/MRI images")
-
-        row = layout.row()
-        row.prop(context.scene, "images_dir_prop")
-
-        row = layout.row()
-        row.operator("object.marching_cubes")  # TODO check this line
+from madmanhuy import read_dicom_image
 
 
 class MarchingCubes(Operator):
@@ -45,10 +22,12 @@ class MarchingCubes(Operator):
 
             print("Got %d images" % (len(img_list)))
             layer_depth = 0.01  # TODO allow user to change this
-            # Got image list
+
+            # For each image
             for i in range(1, len(img_list)):
                 id = img_list[i-1]
                 print('Doing {}'.format(id))
+
                 mat = bpy.data.materials.new(name=id)
                 bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, location=(0, 0, layer_depth*i), layers=(
                     True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
@@ -56,8 +35,16 @@ class MarchingCubes(Operator):
                 # add texture to material
                 node_tree = bpy.data.materials[id].node_tree
                 node = node_tree.nodes.new("ShaderNodeTexImage")
-                segmented_img = null  # TODO
+
+                # read the dicom image, generate a png of it
+                png_path = read_dicom_image(id)
+                bpy.data.images.load(png_path, check_existing=True)
+
+                # use png as image texture
+                segmented_img = bpy.data.images[os.path.split(png_path)[1]]
                 node.image = segmented_img
+
+                # set texture to active
                 node.select = True
                 node_tree.nodes.active = node
 

@@ -5,9 +5,8 @@ import pydicom
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
+
 # reads a dicom image, converts to png
-
-
 def read_dicom_image(path):
     if(os.path.isfile(path)):
         print('Reading file {}'.format(path))
@@ -21,6 +20,14 @@ def read_dicom_image(path):
         return path.replace('.dcm', '.png')
     else:
         print('invalid path!')
+
+# takes path to a png
+# does segmentation
+# returns image
+
+
+def process_image(path):
+    return -1  # TODO
 
 
 def main():
