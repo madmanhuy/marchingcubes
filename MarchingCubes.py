@@ -35,17 +35,37 @@ class MarchingCubes(Operator):
 
     def execute(self, context):
         scene = context.scene
+        scene.render.engine = 'CYCLES'
 
         print(scene.images_dir_prop)
 
         if os.path.isdir(scene.images_dir_prop):
             img_list = [f for f in os.listdir(
                 scene.images_dir_prop) if f.endswith('.dcm')]
-            # Got image list
-            for img in img_list:
-                print(img)
-                # Do something to each image?
+
             print("Got %d images" % (len(img_list)))
+            layer_depth = 0.01  # TODO allow user to change this
+            # Got image list
+            for i in range(1, len(img_list)):
+                id = img_list[i-1]
+                print('Doing {}'.format(id))
+                mat = bpy.data.materials.new(name=id)
+                bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, location=(0, 0, layer_depth*i), layers=(
+                    True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+                obj = context.active_object
+                # add texture to material
+                node_tree = bpy.data.materials[id].node_tree
+                node = node_tree.nodes.new("ShaderNodeTexImage")
+                segmented_img = null  # TODO
+                node.image = segmented_img
+                node.select = True
+                node_tree.nodes.active = node
+
+                if obj.data.materials:
+                    obj.data.materials[0] = mat
+                else:
+                    obj.data.materials.append(mat)
+
         return {'FINISHED'}
 
 
