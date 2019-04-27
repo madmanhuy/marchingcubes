@@ -1,5 +1,4 @@
 import cv2
-from pydicom.data import get_testdata_files
 import os
 import pydicom
 import matplotlib.pyplot as plt
@@ -16,8 +15,6 @@ def read_dicom_image(path):
         img = ds.pixel_array
         # creating png
         cv2.imwrite(path.replace('.dcm', '.png'), img)
-        # plt.imshow(img.pixel_array, cmap=plt.cm.bone)
-        # plt.show()
         return path.replace('.dcm', '.png')
     else:
         print('invalid path!')
