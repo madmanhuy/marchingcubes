@@ -5,6 +5,8 @@ import os
 import sys
 import cv2
 import pydicom
+import numpy as np
+
 
 bl_info = {
     "name" : "Marching Cubes",
@@ -19,7 +21,6 @@ bl_info = {
 
 def read_dicom_image(path):
     if(os.path.isfile(path)):
-        print('Reading file {}'.format(path))
         ds = pydicom.dcmread(path, force=True)
         ds.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
         img = ds.pixel_array
@@ -31,7 +32,11 @@ def read_dicom_image(path):
 
 
 def process_image(path):
-    return -1  # TODO
+    image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
+    image[np.all(image == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
+    cv2.imwrite(path,image)
+    return path
 
 def main():
     scene = bpy.context.scene
@@ -40,7 +45,7 @@ def main():
     # insert path here!
     path = "C:/Users/Huy/programming/school/madmanhuy/Toshiba_Aquilion"
     # change seperation of planes here!
-    layer_depth = 0.01
+    layer_depth = 0.03
 
     # get all dicom images in path
     if os.path.isdir(path):
@@ -51,7 +56,6 @@ def main():
     # For each image
     for i in range(0, len(img_list)):
         id = img_list[i]
-        print('Doing {}'.format(id))
         
         #create a plane
         bpy.ops.mesh.primitive_plane_add(size=2.0,calc_uvs=True,view_align=False,enter_editmode=False,location=(0.0,0.0,layer_depth * i),rotation=(0.0,0.0,0.0))
@@ -66,22 +70,37 @@ def main():
 
         # read the dicom image, generate a png of it
         png_path = read_dicom_image( os.path.join(path,id))
-        print('Got png path:' + png_path)
-        bpy.data.images.load(png_path, check_existing=True)
+        segmented_img_path = process_image(png_path)
 
-        # use png as image texture TODO process image
+        # load into blender
+        bpy.data.images.load(segmented_img_path, check_existing=True)
+
+        # use png as image texture
         segmented_img = bpy.data.images[os.path.split(png_path)[1]]
         node.image = segmented_img
 
         # # set texture to active
         node.select = True
         node_tree.nodes.active = node
+        nodes = mat.node_tree.nodes
 
-        texture_node = node_tree.nodes['Image Texture']
+        # set up node hierarch
         BSDF_node = node_tree.nodes['Principled BSDF']
-
-        node_tree.links.new(texture_node.outputs['Color'],BSDF_node.inputs['Base Color'])
+        nodes.remove(BSDF_node)
         
+        texture_node = nodes['Image Texture']
+
+        transparent_node = nodes.new('ShaderNodeBsdfTransparent')
+        diffuse_node = nodes.new('ShaderNodeBsdfDiffuse')
+        mix_node = nodes.new('ShaderNodeMixShader')
+        output_node = mat.node_tree.nodes['Material Output']
+
+        node_tree.links.new(texture_node.outputs['Color'],diffuse_node.inputs['Color'])
+        mat.node_tree.links.new(texture_node.outputs['Alpha'],mix_node.inputs['Fac'])
+        mat.node_tree.links.new(transparent_node.outputs['BSDF'],mix_node.inputs[1])
+        mat.node_tree.links.new(diffuse_node.outputs['BSDF'],mix_node.inputs[2])
+        mat.node_tree.links.new(mix_node.outputs['Shader'],output_node.inputs['Surface'])
+
         obj = bpy.context.selected_objects[0]
 
         if obj.data.materials:
