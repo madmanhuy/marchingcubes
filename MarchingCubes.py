@@ -3,8 +3,8 @@ from bpy.types import (Panel, Operator)
 from bpy.props import (StringProperty)
 import os
 import sys
-# import cv2
-# import pydicom
+#import cv2
+import pydicom
 
 def read_dicom_image(path):
     if(os.path.isfile(path)):
@@ -16,7 +16,7 @@ def read_dicom_image(path):
         cv2.imwrite(path.replace('.dcm', '.png'), img)
         return path.replace('.dcm', '.png')
     else:
-        print('invalid path!')
+        print('invalid path: ' + path)
 
 
 def process_image(path):
@@ -56,8 +56,6 @@ class MarchingCubes(Operator):
         scene = context.scene
         scene.render.engine = 'CYCLES'
 
-        print(scene.images_dir_prop)
-
         if os.path.isdir(scene.images_dir_prop):
             img_list = [f for f in os.listdir(
                 scene.images_dir_prop) if f.endswith('.dcm')]
@@ -66,20 +64,25 @@ class MarchingCubes(Operator):
             layer_depth = 0.01  # TODO allow user to change this
 
             # For each image
-            for i in range(1, len(img_list)):
-                id = img_list[i-1]
+            for i in range(0, len(img_list)):
+                id = img_list[i]
                 print('Doing {}'.format(id))
 
-                mat = bpy.data.materials.new(name=id)
-                bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, location=(0, 0, layer_depth*i), layers=(
+                
+                obj = bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, location=(0, 0, layer_depth*i), layers=(
                     True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
-                obj = context.active_object
+                
+                #create new material
+                mat = bpy.data.materials.new(name=id)
+                mat.use_nodes = True
+
                 # add texture to material
                 node_tree = bpy.data.materials[id].node_tree
                 node = node_tree.nodes.new("ShaderNodeTexImage")
 
                 # read the dicom image, generate a png of it
-                png_path = read_dicom_image(id)
+                png_path = read_dicom_image( os.path.join(scene.images_dir_prop,id))
+                print('Got png path:' + png_path)
                 bpy.data.images.load(png_path, check_existing=True)
 
                 # use png as image texture
