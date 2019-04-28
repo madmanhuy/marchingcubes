@@ -40,12 +40,12 @@ def process_image(path):
 
 def main():
     scene = bpy.context.scene
-    scene.render.engine = 'CYCLES'
+    scene.render.engine = 'BLENDER_EEVEE'
 
     # insert path here!
     path = "C:/Users/Huy/programming/school/madmanhuy/Toshiba_Aquilion"
     # change seperation of planes here!
-    layer_depth = 0.03
+    layer_depth = 0.01
 
     # get all dicom images in path
     if os.path.isdir(path):
@@ -100,6 +100,10 @@ def main():
         mat.node_tree.links.new(transparent_node.outputs['BSDF'],mix_node.inputs[1])
         mat.node_tree.links.new(diffuse_node.outputs['BSDF'],mix_node.inputs[2])
         mat.node_tree.links.new(mix_node.outputs['Shader'],output_node.inputs['Surface'])
+
+        mat.blend_method = 'BLEND'
+        mat.shadow_method = 'CLIP'
+
 
         obj = bpy.context.selected_objects[0]
 
