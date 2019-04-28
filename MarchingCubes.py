@@ -2,9 +2,9 @@ import bpy
 from bpy.types import (Panel, Operator)
 from bpy.props import (StringProperty)
 import os
-import cv2
-import pydicom
-
+import sys
+# import cv2
+# import pydicom
 
 def read_dicom_image(path):
     if(os.path.isfile(path)):
