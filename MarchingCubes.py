@@ -3,8 +3,19 @@ from bpy.types import (Panel, Operator)
 from bpy.props import (StringProperty)
 import os
 import sys
-#import cv2
+import cv2
 import pydicom
+
+bl_info = {
+    "name" : "Marching Cubes",
+    "author" : "Huy Ha, Maddy Placik, Mandeep Bhutani",
+    "description" : "",
+    "blender" : (2, 80, 0),
+    "version" : (0, 0, 1),
+    "location" : "View3D",
+    "warning" : "",
+    "category" : "Object"
+}
 
 def read_dicom_image(path):
     if(os.path.isfile(path)):
@@ -23,12 +34,13 @@ def process_image(path):
     return -1  # TODO
 
 
-class MarchingCubesPanel(Panel):
-    bl_idname = "OBJECT_PT_marching_cubes"
-    bl_label = "Marching Cubes"
+class PANEL_PT_marching_cubes_panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
-    bl_category = "Create"  # creates the addon panel in the create tab in tools region
+    bl_idname = "OBJECT_PT_marching_cubes"
+    bl_label = "Marching Cubes"
+    bl_context = "objectmode"
+    bl_category = "Marching Cubes"
 
     path = ""
 
@@ -46,8 +58,9 @@ class MarchingCubesPanel(Panel):
         row = layout.row()
         row.operator("object.marching_cubes")  # TODO check this line
 
-
-class MarchingCubes(Operator):
+# following naming convention outlined in 
+# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
+class OBJECT_OT_marching_cubes(Operator):
     bl_idname = "object.marching_cubes"
     bl_label = "Marching Cubes"
     bl_options = {'REGISTER', 'UNDO'}
@@ -102,7 +115,8 @@ class MarchingCubes(Operator):
 
 
 def register():
-    bpy.utils.register_module(__name__)
+    bpy.utils.register_class(OBJECT_OT_marching_cubes)
+    bpy.utils.register_class(PANEL_PT_marching_cubes_panel)
     bpy.types.Scene.images_dir_prop = bpy.props.StringProperty(
         name="Image Directory",
         description="Filepath to folder containing CT/MRI scans for Marching Cube operator",
@@ -111,7 +125,8 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
+    bpy.utils.unregister_class(PANEL_PT_marching_cubes_panel)
+    bpy.utils.unregister_class(OBJECT_OT_marching_cubes)
     del bpy.types.Scene.images_dir_prop
 
 
