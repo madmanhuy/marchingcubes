@@ -2,17 +2,16 @@
 
 MadManHuy is a Blender 2.8 add-on, written in Python using scikit-image and scikit for Digital Image Processing final project.
 
-## Installation
+## Installation and Usage
 
-With [Blender 2.80](https://www.blender.org/2-8/) installed, go to `File` -> `User Preferences`, click on the `Add-ons` tab, then choose `Install from File`. Navigate to MadManHuy.py, then click `Install from File`.
+With [Blender 2.80](https://www.blender.org/2-8/) installed and opened, [drag open another window](https://docs.blender.org/manual/es/dev/interface/window_system/areas.html?highlight=split%20window), then change the window to a text editor window (`Shift+F11`).
 
-Check the box next to the `MadManHuy` Add-On to activate the Add-On.
+![Changing Editor Types](./Assets/editor.png)
 
-## Usage
+Click open, then navigate to `marching_cubes_script.py` and open it. Change the path of the images in the script to the directory storing the images, then click `Run Script`.
 
-In Blender, press `spacebar` to bring up the search functionality, then type MadManHuy to find the plugin.
+## Resources
 
-## Resources 
 Useful Resources for Blender 2.80 dev
 https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons#Naming
 https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Scene_and_Object_API
