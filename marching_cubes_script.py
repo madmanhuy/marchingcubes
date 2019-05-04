@@ -30,12 +30,18 @@ def read_dicom_image(path):
     else:
         print('invalid path: ' + path)
 
-
 def process_image(path):
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
+    img = cv2.imread(path)
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    # threshold to segment
+    ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+    # open image
+    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    open = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, se)
+    open = (255-open)
+    image = cv2.cvtColor(open, cv2.COLOR_BGR2RGBA)
     image[np.all(image == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
-    cv2.imwrite(path,image)
+    cv2.imwrite(path, image)
     return path
 
 def main():

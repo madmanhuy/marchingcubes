@@ -30,8 +30,17 @@ def read_dicom_image(path):
         print('invalid path: ' + path)
 
 
-def process_image(path):
-    return -1  # TODO
+def segment(path):
+    img = cv2.imread(path)
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    # threshold to segment
+    ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+    # open image
+    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    open = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, se)
+    open = (255-open)
+    cv2.imwrite(path, open)
+    return path
 
 
 class PANEL_PT_marching_cubes_panel(Panel):
