@@ -1,23 +1,33 @@
-import bpy
-from bpy.types import (Panel, Operator)
-from bpy.props import (StringProperty)
 import os
+from bpy.props import (StringProperty)
+from bpy.types import (Panel, Operator)
+import bpy
 import sys
-import cv2
-import pydicom
+
+sys.path.append("C:\Python37\Lib\site-packages\cv2")
+sys.path.append("C:\Python37\Lib\site-packages\pydicom")
+sys.path.append("C:\Python37\Lib\site-packages\pydicom-1.2.2.dist-info")
+sys.path.append("C:\Python37\Lib\site-packages\numpy")
+sys.path.append("C:\Python37\Lib\site-packages\numpy-1.16.3.dist-info")
+sys.path.append("C:\Python37\Lib\site-packages")
+sys.path.append("C:\Python37\Lib")
+
 import numpy as np
+import pydicom
+import cv2
 
 
 bl_info = {
-    "name" : "Marching Cubes",
-    "author" : "Huy Ha, Maddy Placik, Mandeep Bhutani",
-    "description" : "",
-    "blender" : (2, 80, 0),
-    "version" : (0, 0, 1),
-    "location" : "View3D",
-    "warning" : "",
-    "category" : "Object"
+    "name": "Marching Cubes",
+    "author": "Huy Ha, Maddy Placik, Mandeep Bhutani",
+    "description": "",
+    "blender": (2, 80, 0),
+    "version": (0, 0, 1),
+    "location": "View3D",
+    "warning": "",
+    "category": "Object"
 }
+
 
 def read_dicom_image(path):
     if(os.path.isfile(path)):
@@ -30,13 +40,15 @@ def read_dicom_image(path):
     else:
         print('invalid path: ' + path)
 
+
 def process_image(path):
     img = cv2.imread(path)
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # threshold to segment
-    ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+    ret, thresh = cv2.threshold(
+        gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     # open image
-    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     open = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, se)
     open = (255-open)
     image = cv2.cvtColor(open, cv2.COLOR_BGR2RGBA)
@@ -44,30 +56,35 @@ def process_image(path):
     cv2.imwrite(path, image)
     return path
 
+
 def main():
     scene = bpy.context.scene
     scene.render.engine = 'BLENDER_EEVEE'
 
     # insert path here!
-    path = "C:/Users/Huy/programming/school/madmanhuy/Toshiba_Aquilion"
+    path = "C:/Users/haquo/programming/school/madmanhuy/Toshiba_Aquilion"
     # change seperation of planes here!
     layer_depth = 0.01
 
     # get all dicom images in path
     if os.path.isdir(path):
         img_list = [f for f in os.listdir(path) if f.endswith('.dcm')]
-
-    print("Got %d images" % (len(img_list)))
+        print("Got %d images" % (len(img_list)))
+    else:
+        print("Bad path!")
+        return
 
     # For each image
     for i in range(0, len(img_list)):
         id = img_list[i]
-        
-        #create a plane
-        bpy.ops.mesh.primitive_plane_add(size=2.0,calc_uvs=True,view_align=False,enter_editmode=False,location=(0.0,0.0,layer_depth * i),rotation=(0.0,0.0,0.0))
-        
+
+        # create a plane
+        bpy.ops.mesh.primitive_plane_add(size=2.0, calc_uvs=True, view_align=False, enter_editmode=False, location=(
+            0.0, 0.0, layer_depth * i), rotation=(0.0, 0.0, 0.0))
+
         # create new material
-        mat = bpy.data.materials.new(name=id) #TODO change name of material so only take text before .dcm
+        # TODO change name of material so only take text before .dcm
+        mat = bpy.data.materials.new(name=id)
         mat.use_nodes = True
 
         # add texture to material
@@ -75,7 +92,7 @@ def main():
         node = node_tree.nodes.new("ShaderNodeTexImage")
 
         # read the dicom image, generate a png of it
-        png_path = read_dicom_image( os.path.join(path,id))
+        png_path = read_dicom_image(os.path.join(path, id))
         segmented_img_path = process_image(png_path)
 
         # load into blender
@@ -93,7 +110,7 @@ def main():
         # set up node hierarch
         BSDF_node = node_tree.nodes['Principled BSDF']
         nodes.remove(BSDF_node)
-        
+
         texture_node = nodes['Image Texture']
 
         transparent_node = nodes.new('ShaderNodeBsdfTransparent')
@@ -101,15 +118,19 @@ def main():
         mix_node = nodes.new('ShaderNodeMixShader')
         output_node = mat.node_tree.nodes['Material Output']
 
-        node_tree.links.new(texture_node.outputs['Color'],diffuse_node.inputs['Color'])
-        mat.node_tree.links.new(texture_node.outputs['Alpha'],mix_node.inputs['Fac'])
-        mat.node_tree.links.new(transparent_node.outputs['BSDF'],mix_node.inputs[1])
-        mat.node_tree.links.new(diffuse_node.outputs['BSDF'],mix_node.inputs[2])
-        mat.node_tree.links.new(mix_node.outputs['Shader'],output_node.inputs['Surface'])
+        node_tree.links.new(
+            texture_node.outputs['Color'], diffuse_node.inputs['Color'])
+        mat.node_tree.links.new(
+            texture_node.outputs['Alpha'], mix_node.inputs['Fac'])
+        mat.node_tree.links.new(
+            transparent_node.outputs['BSDF'], mix_node.inputs[1])
+        mat.node_tree.links.new(
+            diffuse_node.outputs['BSDF'], mix_node.inputs[2])
+        mat.node_tree.links.new(
+            mix_node.outputs['Shader'], output_node.inputs['Surface'])
 
         mat.blend_method = 'BLEND'
         mat.shadow_method = 'CLIP'
-
 
         obj = bpy.context.selected_objects[0]
 
@@ -117,6 +138,7 @@ def main():
             obj.data.materials[0] = mat
         else:
             obj.data.materials.append(mat)
+
 
 if __name__ == "__main__":
     main()
