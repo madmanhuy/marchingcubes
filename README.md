@@ -4,7 +4,9 @@ MadManHuy is a Blender 2.8 add-on, written in Python using scikit-image and scik
 
 ## Installation and Usage
 
-Install `python3`, and `opencv-python`,`pydicom` for `python3` using pip.
+Install `python3`, and use pip to install `opencv-python`, `pydicom`.
+
+Navigate to the directory where python3 is installed. Find the path to `opencv-python` and `pydicom` in `site-packages`. If the path is not yet included at the top of `marching_cubes_script.py`, do `sys.path.append("path")`.
 
 With [Blender 2.80](https://www.blender.org/2-8/) installed and opened, [drag open another window](https://docs.blender.org/manual/es/dev/interface/window_system/areas.html?highlight=split%20window), then change the window to a text editor window (`Shift+F11`).
 
