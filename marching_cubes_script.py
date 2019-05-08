@@ -1,20 +1,13 @@
 import os
-from bpy.props import (StringProperty)
-from bpy.types import (Panel, Operator)
-import bpy
-import sys
 
-sys.path.append("C:\Python37\Lib\site-packages\cv2")
-sys.path.append("C:\Python37\Lib\site-packages\pydicom")
-sys.path.append("C:\Python37\Lib\site-packages\pydicom-1.2.2.dist-info")
-sys.path.append("C:\Python37\Lib\site-packages\numpy")
-sys.path.append("C:\Python37\Lib\site-packages\numpy-1.16.3.dist-info")
-sys.path.append("C:\Python37\Lib\site-packages")
-sys.path.append("C:\Python37\Lib")
-
+import cv2
 import numpy as np
 import pydicom
-import cv2
+
+from bpy.props import StringProperty
+from bpy.types import Operator, Panel
+import bpy
+
 
 
 bl_info = {
