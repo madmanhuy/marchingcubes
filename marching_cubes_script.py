@@ -9,6 +9,7 @@ from bpy.types import Operator, Panel
 import bpy
 
 
+IMAGE_PATH = "ENTER_PATH_TO_IMAGE_DIRECTORY"
 
 bl_info = {
     "name": "Marching Cubes",
@@ -42,9 +43,9 @@ def process_image(path):
         gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     # open image
     se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    open = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, se)
-    open = (255-open)
-    image = cv2.cvtColor(open, cv2.COLOR_BGR2RGBA)
+    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, se)
+    opening = (255 - opening)
+    image = cv2.cvtColor(opening, cv2.COLOR_BGR2RGBA)
     image[np.all(image == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
     cv2.imwrite(path, image)
     return path
@@ -54,14 +55,12 @@ def main():
     scene = bpy.context.scene
     scene.render.engine = 'BLENDER_EEVEE'
 
-    # insert path here!
-    path = "C:/Users/haquo/programming/school/madmanhuy/Toshiba_Aquilion"
     # change seperation of planes here!
     layer_depth = 0.01
 
     # get all dicom images in path
-    if os.path.isdir(path):
-        img_list = [f for f in os.listdir(path) if f.endswith('.dcm')]
+    if os.path.isdir(IMAGE_PATH):
+        img_list = [f for f in os.listdir(IMAGE_PATH) if f.endswith('.dcm')]
         print("Got %d images" % (len(img_list)))
     else:
         print("Bad path!")
@@ -85,7 +84,7 @@ def main():
         node = node_tree.nodes.new("ShaderNodeTexImage")
 
         # read the dicom image, generate a png of it
-        png_path = read_dicom_image(os.path.join(path, id))
+        png_path = read_dicom_image(os.path.join(IMAGE_PATH, id))
         segmented_img_path = process_image(png_path)
 
         # load into blender
