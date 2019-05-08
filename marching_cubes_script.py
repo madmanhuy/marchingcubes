@@ -1,21 +1,15 @@
 import os
-from bpy.props import (StringProperty)
-from bpy.types import (Panel, Operator)
-import bpy
-import sys
 
-sys.path.append("C:\Python37\Lib\site-packages\cv2")
-sys.path.append("C:\Python37\Lib\site-packages\pydicom")
-sys.path.append("C:\Python37\Lib\site-packages\pydicom-1.2.2.dist-info")
-sys.path.append("C:\Python37\Lib\site-packages\numpy")
-sys.path.append("C:\Python37\Lib\site-packages\numpy-1.16.3.dist-info")
-sys.path.append("C:\Python37\Lib\site-packages")
-sys.path.append("C:\Python37\Lib")
-
+import cv2
 import numpy as np
 import pydicom
-import cv2
 
+from bpy.props import StringProperty
+from bpy.types import Operator, Panel
+import bpy
+
+
+IMAGE_PATH = "ENTER_PATH_TO_IMAGE_DIRECTORY"
 
 bl_info = {
     "name": "Marching Cubes",
@@ -35,8 +29,9 @@ def read_dicom_image(path):
         ds.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
         img = ds.pixel_array
         # creating png
-        cv2.imwrite(path.replace('.dcm', '.png'), img)
-        return path.replace('.dcm', '.png')
+        png_path = path.replace('.dcm', '.png')
+        cv2.imwrite(png_path, img)
+        return png_path
     else:
         print('invalid path: ' + path)
 
@@ -49,9 +44,9 @@ def process_image(path):
         gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     # open image
     se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    open = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, se)
-    open = (255-open)
-    image = cv2.cvtColor(open, cv2.COLOR_BGR2RGBA)
+    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, se)
+    opening = (255 - opening)
+    image = cv2.cvtColor(opening, cv2.COLOR_BGR2RGBA)
     image[np.all(image == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
     cv2.imwrite(path, image)
     return path
@@ -61,14 +56,12 @@ def main():
     scene = bpy.context.scene
     scene.render.engine = 'BLENDER_EEVEE'
 
-    # insert path here!
-    path = "C:/Users/haquo/programming/school/madmanhuy/Toshiba_Aquilion"
     # change seperation of planes here!
     layer_depth = 0.01
 
     # get all dicom images in path
-    if os.path.isdir(path):
-        img_list = [f for f in os.listdir(path) if f.endswith('.dcm')]
+    if os.path.isdir(IMAGE_PATH):
+        img_list = [f for f in os.listdir(IMAGE_PATH) if f.endswith('.dcm')]
         print("Got %d images" % (len(img_list)))
     else:
         print("Bad path!")
@@ -92,7 +85,7 @@ def main():
         node = node_tree.nodes.new("ShaderNodeTexImage")
 
         # read the dicom image, generate a png of it
-        png_path = read_dicom_image(os.path.join(path, id))
+        png_path = read_dicom_image(os.path.join(IMAGE_PATH, id))
         segmented_img_path = process_image(png_path)
 
         # load into blender
