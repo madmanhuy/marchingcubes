@@ -29,8 +29,9 @@ def read_dicom_image(path):
         ds.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
         img = ds.pixel_array
         # creating png
-        cv2.imwrite(path.replace('.dcm', '.png'), img)
-        return path.replace('.dcm', '.png')
+        png_path = path.replace('.dcm', '.png')
+        cv2.imwrite(png_path, img)
+        return png_path
     else:
         print('invalid path: ' + path)
 
