@@ -4,9 +4,10 @@ from PIL import Image
 import glob
 
 def main():
-	path = input("Enter the path of the directory of pngs: ")
+	#path = input("Enter the path of the directory of pngs: ")
+	path = "C:/temp"
 	if(os.path.exists(path)):
-		vertices,faces = MarchingCubes(path,128)
+		vertices,faces = MarchingCubes(path,16)
 		print("Writing to output.txt")
 		print(len(vertices))
 		print(len(faces))
@@ -14,7 +15,10 @@ def main():
 			for vertex in vertices:
 				f.write("v {} {} {}\n".format(vertex[0],vertex[1],vertex[2]))
 			for face in faces:
-				f.write("f {} {} {}\n".format(face[0],face[1],face[2]))
+				v0 = vertices.index(face[0]) + 1
+				v1 = vertices.index(face[1]) + 1
+				v2 = vertices.index(face[2]) + 1
+				f.write("f {} {} {}\n".format(v0,v1,v2))
 		print("Done")
 	else:
 		print("Path does not exist: "+str(path))
@@ -312,10 +316,10 @@ def MarchingCubes(path, res):
 		print("Doing layer {} out of {}".format(imIndex,len(image_list)))
 		#iterate across rows of image
 		i = 0
-		while i<width-res:
+		while i < width-res:
 			j = 0
 			#iterate across columns of image
-			while j<height-res:
+			while j < height-res:
 				#vertices of current marching cube
 				v7 = 0 
 				v6 = 0
@@ -385,8 +389,8 @@ def MarchingCubes(path, res):
 						face.append(fVert[fc+2])
 						faces.append(face)
 						fc += 3
-				j+=1
-			i+=1
+				j+=res
+			i+=res
 		imIndex+=1
 	return vertices,faces;
 
