@@ -1,13 +1,13 @@
 import os
 import sys
-from PIL import Image
+import imageio
 import glob
 
 def main():
 	#path = input("Enter the path of the directory of pngs: ")
 	path = "C:/temp"
 	if(os.path.exists(path)):
-		vertices,faces = MarchingCubes(path,16)
+		vertices,faces = MarchingCubes(path,64)
 		print("Writing to output.txt")
 		print(len(vertices))
 		print(len(faces))
@@ -15,10 +15,7 @@ def main():
 			for vertex in vertices:
 				f.write("v {} {} {}\n".format(vertex[0],vertex[1],vertex[2]))
 			for face in faces:
-				v0 = vertices.index(face[0]) + 1
-				v1 = vertices.index(face[1]) + 1
-				v2 = vertices.index(face[2]) + 1
-				f.write("f {} {} {}\n".format(v0,v1,v2))
+				f.write("f {} {} {}\n".format(face[0],face[1],face[2]))
 		print("Done")
 	else:
 		print("Path does not exist: "+str(path))
@@ -31,18 +28,11 @@ def MarchingCubes(path, res):
 
 	#create list of image slices
 	for filename in glob.glob( path  + "/*.png"):
-		im = Image.open(filename)
-		image_list.append(im)
+		image_list.append(imageio.imread(filename))
 
 	#image dimensions
-	width, height = image_list[0].size
-
-	#reference pixel to compare rgb value
-	#pix[0,0] is white, pix[200,200] is red
-	pix = image_list[0].load()
-
-	#index to find corresponding list of edges
-	edgeMapIndex = 0
+	width = len(image_list[0])
+	height = len(image_list[0][0])
 
 	#triangulation table
 	edgeMap = [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -313,56 +303,34 @@ def MarchingCubes(path, res):
 	#loop through images in stack
 	imIndex = 0
 	while imIndex < len(image_list)-1:
-		print("Doing layer {} out of {}".format(imIndex,len(image_list)))
+		print("Doing layer {} out of {}".format(imIndex + 1,len(image_list) - 1))
 		#iterate across rows of image
 		i = 0
 		while i < width-res:
 			j = 0
 			#iterate across columns of image
 			while j < height-res:
-				#vertices of current marching cube
-				v7 = 0 
-				v6 = 0
-				v5 = 0
-				v4 = 0
-				v3 = 0
-				v2 = 0
-				v1 = 0
-				v0 = 0
 				#consecutive images in stack
-				pix1 = image_list[imIndex].load()
-				pix2 = image_list[imIndex+1].load()
-				#assign 1 to cube vertex if pixel val at that vertex is desired
-				#these vertices are inside or on the surface
-				#update value of edgeMapIndex, bit value form vertices
-				#v7v6v5v4v3v2v1v0 = 256 if all equal 1
-				edgeMapIndex = 0
+				pix1 = image_list[imIndex]
+				pix2 = image_list[imIndex+1]
+				
 				cubeCorners = [[i,j,imIndex],[i+res,j,imIndex],[i+res,j,imIndex+1],[i,j,imIndex+1],[i,j+res,imIndex],[i+res,j+res,imIndex],[i+res,j+res,imIndex+1],[i,j+res,imIndex+1]]
-				#check value of verttex
-				if pix1[i,j] != pix[0,0]:
-					v0 = 1
-					edgeMapIndex += 1
-				if pix1[i+res,j] != pix[0,0]:
-					v1 = 1
-					edgeMapIndex += 2
-				if pix2[i+res,j] != pix[0,0]:
-					v2 = 1
-					edgeMapIndex += 2**2
-				if pix2[i,j] != pix[0,0]:
-					v3 = 1
-					edgeMapIndex += 2**3
-				if pix1[i,j+res] != pix[0,0]:
-					v4 = 1
-					edgeMapIndex += 2**4
-				if pix1[i+res,j+res] != pix[0,0]:
-					v5 = 1
-					edgeMapIndex += 2**5
-				if pix2[i+res,j+res] != pix[0,0]:
-					v6 = 1
-					edgeMapIndex += 2**6
-				if pix2[i,j+res] != pix[0,0]:
-					v7 = 1
-					edgeMapIndex += 2**7		
+
+				#assign 1 to cube vertex if pixel val at that vertex is desired
+				#vertices of current marching cube
+				v0 = v1 = v2 = v3 = v4 = v5 = v6 = v7 = 0
+				#check if cube corners are in segmented area
+				if pix1[i,j] != 0: v0 = 1
+				if pix1[i+res,j] != 0: v1 = 1
+				if pix2[i+res,j] != 0: v2 = 1
+				if pix2[i,j] != 0: v3 = 1
+				if pix1[i,j+res] != 0: v4 = 1
+				if pix1[i+res,j+res] != 0: v5 = 1
+				if pix2[i+res,j+res] != 0: v6 = 1
+				if pix2[i,j+res] != 0: v7 = 1
+				
+				#index to find corresponding list of edges
+				edgeMapIndex = (1<<0) * v0 + (1<<1) * v1 + (1<<2) * v2 + (1<<3) * v3 + (1<<4) * v4 + (1<<5) * v5 + (1<<6) * v6 + (1<<7) * v7	
 				#vertices that make a face
 				fVert = []
 				#find intersection points along each edge
@@ -384,9 +352,12 @@ def MarchingCubes(path, res):
 					fc = 0
 					while fc < len(fVert)/3:
 						face = []
-						face.append(fVert[fc])
-						face.append(fVert[fc+1])
-						face.append(fVert[fc+2])
+						v0 = vertices.index(fVert[fc]) + 1
+						v1 = vertices.index(fVert[fc + 1]) + 1
+						v2 = vertices.index(fVert[fc + 2]) + 1
+						face.append(v0)
+						face.append(v1)
+						face.append(v2)
 						faces.append(face)
 						fc += 3
 				j+=res
