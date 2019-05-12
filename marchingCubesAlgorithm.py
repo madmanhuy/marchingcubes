@@ -2,13 +2,14 @@ import os
 import sys
 import imageio
 import glob
+import numpy as np
 
 def main():
 	#path = input("Enter the path of the directory of pngs: ")
 	path = "C:/temp"
 	if(os.path.exists(path)):
-		vertices,faces = MarchingCubes(path,64)
-		print("Writing to output.txt")
+		vertices,faces = MarchingCubes(path,8)
+		print("Writing to output.obj")
 		print(len(vertices))
 		print(len(faces))
 		with open('output.obj','w') as f:
@@ -33,6 +34,11 @@ def MarchingCubes(path, res):
 	#image dimensions
 	width = len(image_list[0])
 	height = len(image_list[0][0])
+
+	#create bounding image so that mesh is closed
+	black_image = np.zeros([width,height],dtype=np.uint8)
+	black_image.fill(0)
+	image_list = [black_image] + image_list + [black_image]
 
 	#triangulation table
 	edgeMap = [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -320,14 +326,14 @@ def MarchingCubes(path, res):
 				#vertices of current marching cube
 				v0 = v1 = v2 = v3 = v4 = v5 = v6 = v7 = 0
 				#check if cube corners are in segmented area
-				if pix1[i,j] != 0: v0 = 1
-				if pix1[i+res,j] != 0: v1 = 1
-				if pix2[i+res,j] != 0: v2 = 1
-				if pix2[i,j] != 0: v3 = 1
-				if pix1[i,j+res] != 0: v4 = 1
-				if pix1[i+res,j+res] != 0: v5 = 1
-				if pix2[i+res,j+res] != 0: v6 = 1
-				if pix2[i,j+res] != 0: v7 = 1
+				if pix1[i,j].all() != 0: v0 = 1
+				if pix1[i+res,j].all() != 0: v1 = 1
+				if pix2[i+res,j].all() != 0: v2 = 1
+				if pix2[i,j].all() != 0: v3 = 1
+				if pix1[i,j+res].all() != 0: v4 = 1
+				if pix1[i+res,j+res].all() != 0: v5 = 1
+				if pix2[i+res,j+res].all() != 0: v6 = 1
+				if pix2[i,j+res].all() != 0: v7 = 1
 				
 				#index to find corresponding list of edges
 				edgeMapIndex = (1<<0) * v0 + (1<<1) * v1 + (1<<2) * v2 + (1<<3) * v3 + (1<<4) * v4 + (1<<5) * v5 + (1<<6) * v6 + (1<<7) * v7	
@@ -337,16 +343,16 @@ def MarchingCubes(path, res):
 				for x in edgeMap[edgeMapIndex]:
 					#intersection is a vertex that will be added to our final list of vertices
 					intersection = []
-					if x!=-1:
-						#obtain endpoints of edge
-						indexA = cubeCorners[cornerFromEdge[x][0]]
-						indexB = cubeCorners[cornerFromEdge[x][1]]
-						#intersection is midpoint of edge
-						intersection.append((indexA[0]+indexB[0])/2)
-						intersection.append((indexA[1]+indexB[1])/2)
-						intersection.append((indexA[2]+indexB[2])/2)
-						fVert.append(intersection)
-						vertices.append(intersection)
+					# if x!=-1:
+					#obtain endpoints of edge
+					indexA = cubeCorners[cornerFromEdge[x][0]]
+					indexB = cubeCorners[cornerFromEdge[x][1]]
+					#intersection is midpoint of edge
+					intersection.append((indexA[0]+indexB[0])/2)
+					intersection.append((indexA[1]+indexB[1])/2)
+					intersection.append((indexA[2]+indexB[2])/2)
+					fVert.append(intersection)
+					vertices.append(intersection)
 				#populate list of faces
 				if len(fVert) != 0:
 					fc = 0
