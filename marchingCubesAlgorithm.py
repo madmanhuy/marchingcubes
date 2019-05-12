@@ -41,7 +41,7 @@ def MarchingCubes(path, res):
 	faces = []
 
 	args = []
-	for i in range(len(image_path_list)-1):
+	for i in range(len(image_path_list)):
 		args.append((i,path,res))
 	
 	results = []
@@ -80,17 +80,27 @@ def FindIndices(face_positions,vertices):
 def MarchLayer(layer,path,res):
 	# args = (layer, path)
 	image_list = glob.glob( path  + "/*.png")
-	image1 = imageio.imread(image_list[layer])
-	image2 = imageio.imread(image_list[layer + 1])
-	# black_image = np.zeros([width,height],dtype=np.uint8)
-	# 	black_image.fill(0)
+	tmp = imageio.imread(image_list[0])
 
 	#image dimensions
-	width = len(image1)
-	height = len(image1[0])
+	width = len(tmp)
+	height = len(tmp[0])
 
-	vertices = []
-	faces = []
+	image1 = []
+	image2 = []
+	if layer == 0:
+		image1 = np.zeros([width,height],dtype=np.uint8)
+		image1.fill(0)
+		image2 = imageio.imread(image_list[layer])
+	elif layer == len(image_list):
+		image1 = imageio.imread(image_list[layer-1])
+		image2 = np.zeros([width,height],dtype=np.uint8)
+		image2.fill(0)
+	else:
+		image1 = imageio.imread(image_list[layer-1])
+		image2 = imageio.imread(image_list[layer])
+
+	
 
 	#triangulation table
 	edgeMap = [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -354,6 +364,9 @@ def MarchLayer(layer,path,res):
 	cornerFromEdge = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[4,0],[5,1],[6,2],[7,3]]
 
 	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list) - 1,res,width,height))
+	
+	faces = []
+	
 	#iterate across rows of image
 	i = 0
 	while i < width-res:
@@ -393,19 +406,23 @@ def MarchLayer(layer,path,res):
 				intersection.append((indexA[1]+indexB[1])/2)
 				intersection.append((indexA[2]+indexB[2])/2)
 				fVert.append(intersection)
-				vertices.append(intersection)
 			#populate list of faces
 			if len(fVert) != 0:
 				fc = 0
 				while fc < len(fVert)/3:
 					face = []
-					face.append(fVert[fc])
-					face.append(fVert[fc+1])
-					face.append(fVert[fc+2])
+					face.append(tuple(fVert[fc]))
+					face.append(tuple(fVert[fc + 1]))
+					face.append(tuple(fVert[fc + 2]))
 					faces.append(face)
 					fc += 3
 			j+=res
 		i+=res
+	vertices = set()
+	for face in faces:
+		for vertex in face:
+			vertices.add(tuple(vertex))
+	vertices = list(vertices)
 	return vertices,faces;
 
 if __name__ == "__main__": 
