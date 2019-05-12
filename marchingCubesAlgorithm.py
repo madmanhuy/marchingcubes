@@ -3,15 +3,17 @@ import sys
 import imageio
 import glob
 import numpy as np
+from multiprocessing import Pool
+from math import ceil
 
 def main():
 	#path = input("Enter the path of the directory of pngs: ")
 	path = "C:/temp"
 	if(os.path.exists(path)):
 		vertices,faces = MarchingCubes(path,16)
+		print("total number of vertices:" + str(len(vertices)))
+		print("total number of faces:" + str(len(faces)))
 		print("Writing to output.obj")
-		print(len(vertices))
-		print(len(faces))
 		with open('output.obj','w') as f:
 			for vertex in vertices:
 				f.write("v {} {} {}\n".format(vertex[0],vertex[1],vertex[2]))
@@ -25,20 +27,70 @@ def main():
 def MarchingCubes(path, res):
 	""" returns the list of vertices and faces, from path to pngs directory"""
 	#list of 2D slices
-	image_list = []
+	image_path_list = []
 
 	#create list of image slices
 	for filename in glob.glob( path  + "/*.png"):
-		image_list.append(imageio.imread(filename))
+		image_path_list.append(filename)
+	
+	#list of vertices
+	vertices = []
+	#list of faces with positions of the vertex
+	faces_positions = []
+	#list of faces with indices of vertices
+	faces = []
+
+	args = []
+	for i in range(len(image_path_list)-1):
+		args.append((i,path,res))
+	
+	results = []
+	with Pool() as p:
+		results = p.starmap(MarchLayer,args)
+		for result in results:
+			vertices = vertices + result[0]
+			faces_positions = faces_positions + result[1]
+
+	#replace face positions with vertex indices
+	args = []
+	length = ceil(len(faces_positions)/32)
+	for i in range(32):
+		args.append((faces_positions[i*length:(i+1)*length],vertices))
+	with Pool() as p:
+		#args = (subset_of_face_positions, vertices)
+		faces_results = p.starmap(FindIndices,args)
+		for face in faces_results:
+			faces = faces + face
+
+	return vertices,faces;
+
+def FindIndices(face_positions,vertices):
+	faces = []
+	for face_position in face_positions:
+		face = []
+		v0 = vertices.index(face_position[0]) + 1
+		v1 = vertices.index(face_position[1]) + 1
+		v2 = vertices.index(face_position[2]) + 1
+		face.append(v0)
+		face.append(v1)
+		face.append(v2)
+		faces.append(face)
+	return faces
+
+def MarchLayer(layer,path,res):
+	# args = (layer, path)
+	image_list = glob.glob( path  + "/*.png")
+	image1 = imageio.imread(image_list[layer])
+	image2 = imageio.imread(image_list[layer + 1])
+	# black_image = np.zeros([width,height],dtype=np.uint8)
+	# 	black_image.fill(0)
 
 	#image dimensions
-	width = len(image_list[0])
-	height = len(image_list[0][0])
+	width = len(image1)
+	height = len(image1[0])
 
-	#create bounding image so that mesh is closed
-	black_image = np.zeros([width,height],dtype=np.uint8)
-	black_image.fill(0)
-	image_list = [black_image] + image_list + [black_image]
+	vertices = []
+	faces = []
 
 	#triangulation table
 	edgeMap = [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -301,74 +353,59 @@ def MarchingCubes(path, res):
 	#maps edge to its vertices, index of this array is the edge number (ie: edge 0 has v0 and v1 as endpoints)
 	cornerFromEdge = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[4,0],[5,1],[6,2],[7,3]]
 
-	#list of vertices
-	vertices = []
-	#list of faces
-	faces = []
+	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list) - 1,res,width,height))
+	#iterate across rows of image
+	i = 0
+	while i < width-res:
+		j = 0
+		#iterate across columns of image
+		while j < height-res:
+			
+			cubeCorners = [[i,j,layer],[i+res,j,layer],[i+res,j,layer+1],[i,j,layer+1],[i,j+res,layer],[i+res,j+res,layer],[i+res,j+res,layer+1],[i,j+res,layer+1]]
 
-	#loop through images in stack
-	imIndex = 0
-	while imIndex < len(image_list)-1:
-		print("Doing layer {} out of {}".format(imIndex + 1,len(image_list) - 1))
-		#iterate across rows of image
-		i = 0
-		while i < width-res:
-			j = 0
-			#iterate across columns of image
-			while j < height-res:
-				#consecutive images in stack
-				pix1 = image_list[imIndex]
-				pix2 = image_list[imIndex+1]
-				
-				cubeCorners = [[i,j,imIndex],[i+res,j,imIndex],[i+res,j,imIndex+1],[i,j,imIndex+1],[i,j+res,imIndex],[i+res,j+res,imIndex],[i+res,j+res,imIndex+1],[i,j+res,imIndex+1]]
-
-				#assign 1 to cube vertex if pixel val at that vertex is desired
-				#vertices of current marching cube
-				v0 = v1 = v2 = v3 = v4 = v5 = v6 = v7 = 0
-				#check if cube corners are in segmented area
-				if pix1[i,j].all() != 0: v0 = 1
-				if pix1[i+res,j].all() != 0: v1 = 1
-				if pix2[i+res,j].all() != 0: v2 = 1
-				if pix2[i,j].all() != 0: v3 = 1
-				if pix1[i,j+res].all() != 0: v4 = 1
-				if pix1[i+res,j+res].all() != 0: v5 = 1
-				if pix2[i+res,j+res].all() != 0: v6 = 1
-				if pix2[i,j+res].all() != 0: v7 = 1
-				
-				#index to find corresponding list of edges
-				edgeMapIndex = (1<<0) * v0 + (1<<1) * v1 + (1<<2) * v2 + (1<<3) * v3 + (1<<4) * v4 + (1<<5) * v5 + (1<<6) * v6 + (1<<7) * v7	
-				#vertices that make a face
-				fVert = []
-				#find intersection points along each edge
-				for x in edgeMap[edgeMapIndex]:
-					#intersection is a vertex that will be added to our final list of vertices
-					intersection = []
-					# if x!=-1:
-					#obtain endpoints of edge
-					indexA = cubeCorners[cornerFromEdge[x][0]]
-					indexB = cubeCorners[cornerFromEdge[x][1]]
-					#intersection is midpoint of edge
-					intersection.append((indexA[0]+indexB[0])/2)
-					intersection.append((indexA[1]+indexB[1])/2)
-					intersection.append((indexA[2]+indexB[2])/2)
-					fVert.append(intersection)
-					vertices.append(intersection)
-				#populate list of faces
-				if len(fVert) != 0:
-					fc = 0
-					while fc < len(fVert)/3:
-						face = []
-						v0 = vertices.index(fVert[fc]) + 1
-						v1 = vertices.index(fVert[fc + 1]) + 1
-						v2 = vertices.index(fVert[fc + 2]) + 1
-						face.append(v0)
-						face.append(v1)
-						face.append(v2)
-						faces.append(face)
-						fc += 3
-				j+=res
-			i+=res
-		imIndex+=1
+			#assign 1 to cube vertex if pixel val at that vertex is desired
+			#vertices of current marching cube
+			v0 = v1 = v2 = v3 = v4 = v5 = v6 = v7 = 0
+			#check if cube corners are in segmented area
+			if image1[i,j].all() != 0: v0 = 1
+			if image1[i+res,j].all() != 0: v1 = 1
+			if image2[i+res,j].all() != 0: v2 = 1
+			if image2[i,j].all() != 0: v3 = 1
+			if image1[i,j+res].all() != 0: v4 = 1
+			if image1[i+res,j+res].all() != 0: v5 = 1
+			if image2[i+res,j+res].all() != 0: v6 = 1
+			if image2[i,j+res].all() != 0: v7 = 1
+			
+			#index to find corresponding list of edges
+			edgeMapIndex = (1<<0) * v0 + (1<<1) * v1 + (1<<2) * v2 + (1<<3) * v3 + (1<<4) * v4 + (1<<5) * v5 + (1<<6) * v6 + (1<<7) * v7	
+			#vertices that make a face
+			fVert = []
+			#find intersection points along each edge
+			for x in edgeMap[edgeMapIndex]:
+				#intersection is a vertex that will be added to our final list of vertices
+				intersection = []
+				# if x!=-1:
+				#obtain endpoints of edge
+				indexA = cubeCorners[cornerFromEdge[x][0]]
+				indexB = cubeCorners[cornerFromEdge[x][1]]
+				#intersection is midpoint of edge
+				intersection.append((indexA[0]+indexB[0])/2)
+				intersection.append((indexA[1]+indexB[1])/2)
+				intersection.append((indexA[2]+indexB[2])/2)
+				fVert.append(intersection)
+				vertices.append(intersection)
+			#populate list of faces
+			if len(fVert) != 0:
+				fc = 0
+				while fc < len(fVert)/3:
+					face = []
+					face.append(fVert[fc])
+					face.append(fVert[fc+1])
+					face.append(fVert[fc+2])
+					faces.append(face)
+					fc += 3
+			j+=res
+		i+=res
 	return vertices,faces;
 
 if __name__ == "__main__": 
