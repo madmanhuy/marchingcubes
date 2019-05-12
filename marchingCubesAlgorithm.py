@@ -363,7 +363,7 @@ def MarchLayer(layer,path,res):
 	#maps edge to its vertices, index of this array is the edge number (ie: edge 0 has v0 and v1 as endpoints)
 	cornerFromEdge = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[4,0],[5,1],[6,2],[7,3]]
 
-	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list) - 1,res,width,height))
+	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list),res,width,height))
 	
 	faces = []
 	
