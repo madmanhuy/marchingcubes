@@ -8,7 +8,7 @@ def main():
 	#path = input("Enter the path of the directory of pngs: ")
 	path = "C:/temp"
 	if(os.path.exists(path)):
-		vertices,faces = MarchingCubes(path,8)
+		vertices,faces = MarchingCubes(path,16)
 		print("Writing to output.obj")
 		print(len(vertices))
 		print(len(faces))
