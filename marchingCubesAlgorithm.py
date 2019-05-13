@@ -10,7 +10,7 @@ def main():
 	#path = input("Enter the path of the directory of pngs: ")
 	path = "C:/temp"
 	if(os.path.exists(path)):
-		vertices,faces = MarchingCubes(path,16)
+		vertices,faces = MarchingCubes(path,4)
 		print("total number of vertices:" + str(len(vertices)))
 		print("total number of faces:" + str(len(faces)))
 		print("Writing to output.obj")
@@ -41,7 +41,7 @@ def MarchingCubes(path, res):
 	faces = []
 
 	args = []
-	for i in range(len(image_path_list)):
+	for i in range(len(image_path_list)+1):
 		args.append((i,path,res))
 	
 	results = []
@@ -53,8 +53,8 @@ def MarchingCubes(path, res):
 
 	#replace face positions with vertex indices
 	args = []
-	length = ceil(len(faces_positions)/32)
-	for i in range(32):
+	length = ceil(len(faces_positions)/128)
+	for i in range(128):
 		args.append((faces_positions[i*length:(i+1)*length],vertices))
 	with Pool() as p:
 		#args = (subset_of_face_positions, vertices)
@@ -75,6 +75,7 @@ def FindIndices(face_positions,vertices):
 		face.append(v1)
 		face.append(v2)
 		faces.append(face)
+	print("done")
 	return faces
 
 def MarchLayer(layer,path,res):
@@ -99,7 +100,7 @@ def MarchLayer(layer,path,res):
 	else:
 		image1 = imageio.imread(image_list[layer-1])
 		image2 = imageio.imread(image_list[layer])
-
+	
 	
 
 	#triangulation table
@@ -423,6 +424,7 @@ def MarchLayer(layer,path,res):
 		for vertex in face:
 			vertices.add(tuple(vertex))
 	vertices = list(vertices)
+	print("for layer {} got {} vertices and {} faces".format(layer,len(vertices),len(faces)))
 	return vertices,faces;
 
 if __name__ == "__main__": 
