@@ -266,19 +266,6 @@ TRIANGULATION_TABLE = [
     ]
 
 
-def find_indices(face_positions, vertices):
-    faces = []
-
-    for face_position in face_positions:
-        v0 = vertices.index(face_position[0]) + 1
-        v1 = vertices.index(face_position[1]) + 1
-        v2 = vertices.index(face_position[2]) + 1
-        face = [v0, v1, v2]
-        faces.append(face)
-
-    return faces
-
-
 def march_layer(layer, path, resolution):
     # args = (layer, path)
     image_list = glob.glob(path + "/*.png")
@@ -320,7 +307,7 @@ def march_layer(layer, path, resolution):
 
     print(
         "Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(
-            layer + 1, len(image_list), resolution, width, height
+            layer + 1, len(image_list) + 1, resolution, width, height
         )
     )
 
@@ -409,17 +396,29 @@ def march_layer(layer, path, resolution):
 
         x += resolution
 
-    vertices = set()
+    vertices = []
     nondegenerate_faces = []
 
     for face in faces:
         if face[0] != face[1] and face[1] != face[2]:
             nondegenerate_faces.append(face)
             for vertex in face:
-                vertices.add(tuple(vertex))
-    vertices = list(vertices)
+                if vertex not in vertices:
+                    vertices.append(vertex)
 
-    return (vertices, nondegenerate_faces)
+    faces = nondegenerate_faces
+    faces_indexed = []
+    for face in faces:
+        face_indices = []
+        v0 = vertices.index(face[0]) + 1
+        v1 = vertices.index(face[1]) + 1
+        v2 = vertices.index(face[2]) + 1
+        face_indices.append(v0)
+        face_indices.append(v1)
+        face_indices.append(v2)
+        faces_indexed.append(face_indices)
+
+    return (vertices, faces_indexed)
 
 
 def march(path, resolution):
@@ -429,11 +428,10 @@ def march(path, resolution):
         image_path_list.append(filename)
 
     vertices = []
-    faces_positions = []
     faces = []
 
     image_data = []
-    for i, image_path in enumerate(image_path_list):
+    for i in range(len(image_path_list)+1):
         image_data.append((i, path, resolution))
 
     faces_and_vertices = []
@@ -441,18 +439,15 @@ def march(path, resolution):
     with Pool() as p:
         faces_and_vertices = p.starmap(march_layer, image_data)
         for vertex_face in faces_and_vertices:
+            offset = len(vertices)
             vertices = vertices + vertex_face[0]
-            faces_positions = faces_positions + vertex_face[1]
-
-    # replace face positions with vertex indices
-    face_data = []
-    length = ceil(len(faces_positions) / 128)
-    for i in range(128):
-        face_data.append((faces_positions[i * length:(i + 1) * length], vertices))
-
-    with Pool() as p:
-        faces_results = p.starmap(find_indices, face_data)
-        for face in faces_results:
-            faces = faces + face
+            new_faces = []
+            for new_face in vertex_face[1]:
+                new_face[0] += offset
+                new_face[1] += offset
+                new_face[2] += offset
+                new_face = [round(index) for index in new_face]
+                new_faces.append(new_face)
+            faces = faces + new_faces
 
     return (vertices, faces)
