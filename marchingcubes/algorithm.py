@@ -320,7 +320,7 @@ def march_layer(layer, path, resolution):
 
     print(
         "Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(
-            layer + 1, len(image_list) - 1, resolution, width, height
+            layer + 1, len(image_list), resolution, width, height
         )
     )
 
