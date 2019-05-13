@@ -18,7 +18,7 @@ def cli(path, resolution):
         if image.endswith('.dcm'):
             png_path = read_dicom_image(os.path.join(path, image))
 
-       process_image(png_path)
+        process_image(png_path)
 
     vertices, faces = march(path, resolution)
     click.echo("Total number of vertices: {}" .format(len(vertices)))
