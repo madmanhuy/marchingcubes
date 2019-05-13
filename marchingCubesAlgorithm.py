@@ -10,7 +10,7 @@ def main():
 	#path = input("Enter the path of the directory of pngs: ")
 	path = "C:/temp"
 	if(os.path.exists(path)):
-		vertices,faces = MarchingCubes(path,16)
+		vertices,faces = MarchingCubes(path,4)
 		print("total number of vertices:" + str(len(vertices)))
 		print("total number of faces:" + str(len(faces)))
 		print("Writing to output.obj")
@@ -41,7 +41,7 @@ def MarchingCubes(path, res):
 	faces = []
 
 	args = []
-	for i in range(len(image_path_list)):
+	for i in range(len(image_path_list)+1):
 		args.append((i,path,res))
 	
 	results = []
@@ -53,8 +53,8 @@ def MarchingCubes(path, res):
 
 	#replace face positions with vertex indices
 	args = []
-	length = ceil(len(faces_positions)/32)
-	for i in range(32):
+	length = ceil(len(faces_positions)/128)
+	for i in range(128):
 		args.append((faces_positions[i*length:(i+1)*length],vertices))
 	with Pool() as p:
 		#args = (subset_of_face_positions, vertices)
@@ -99,7 +99,7 @@ def MarchLayer(layer,path,res):
 	else:
 		image1 = imageio.imread(image_list[layer-1])
 		image2 = imageio.imread(image_list[layer])
-
+	
 	
 
 	#triangulation table
@@ -363,7 +363,7 @@ def MarchLayer(layer,path,res):
 	#maps edge to its vertices, index of this array is the edge number (ie: edge 0 has v0 and v1 as endpoints)
 	cornerFromEdge = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[4,0],[5,1],[6,2],[7,3]]
 
-	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list),res,width,height))
+	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list)+1,res,width,height))
 	
 	faces = []
 	
@@ -419,11 +419,15 @@ def MarchLayer(layer,path,res):
 			j+=res
 		i+=res
 	vertices = set()
+	nondegenerate_faces = []
 	for face in faces:
-		for vertex in face:
-			vertices.add(tuple(vertex))
+		if face[0] != face[1] and face[1] != face[2]:
+			nondegenerate_faces.append(face)
+			for vertex in face:
+				vertices.add(tuple(vertex))
 	vertices = list(vertices)
-	return vertices,faces;
+	# print("for layer {} got {} vertices and {} faces".format(layer,len(vertices),len(faces)))
+	return vertices,nondegenerate_faces;
 
 if __name__ == "__main__": 
 	main()
