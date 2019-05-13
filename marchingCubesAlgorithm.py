@@ -75,7 +75,6 @@ def FindIndices(face_positions,vertices):
 		face.append(v1)
 		face.append(v2)
 		faces.append(face)
-	print("done")
 	return faces
 
 def MarchLayer(layer,path,res):
@@ -364,7 +363,7 @@ def MarchLayer(layer,path,res):
 	#maps edge to its vertices, index of this array is the edge number (ie: edge 0 has v0 and v1 as endpoints)
 	cornerFromEdge = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[4,0],[5,1],[6,2],[7,3]]
 
-	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list),res,width,height))
+	print("Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(layer + 1,len(image_list)+1,res,width,height))
 	
 	faces = []
 	
@@ -420,12 +419,15 @@ def MarchLayer(layer,path,res):
 			j+=res
 		i+=res
 	vertices = set()
+	nondegenerate_faces = []
 	for face in faces:
-		for vertex in face:
-			vertices.add(tuple(vertex))
+		if face[0] != face[1] and face[1] != face[2]:
+			nondegenerate_faces.append(face)
+			for vertex in face:
+				vertices.add(tuple(vertex))
 	vertices = list(vertices)
-	print("for layer {} got {} vertices and {} faces".format(layer,len(vertices),len(faces)))
-	return vertices,faces;
+	# print("for layer {} got {} vertices and {} faces".format(layer,len(vertices),len(faces)))
+	return vertices,nondegenerate_faces;
 
 if __name__ == "__main__": 
 	main()
