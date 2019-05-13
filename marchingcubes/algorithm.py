@@ -320,7 +320,7 @@ def march_layer(layer, path, resolution):
 
     print(
         "Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(
-            layer + 1, len(image_list), resolution, width, height
+            layer + 1, len(image_list)+1, resolution, width, height
         )
     )
 
@@ -410,11 +410,16 @@ def march_layer(layer, path, resolution):
         x += resolution
 
     vertices = set()
+    nondegenerate_faces = []
+
     for face in faces:
-        for vertex in face:
-            vertices.add(tuple(vertex))
+        if face[0] != face[1] and face[1] != face[2]:
+            nondegenerate_faces.append(face)
+            for vertex in face:
+                vertices.add(tuple(vertex))
     vertices = list(vertices)
-    return (vertices, faces)
+
+    return (vertices, nondegenerate_faces)
 
 
 def march(path, resolution):
@@ -428,7 +433,7 @@ def march(path, resolution):
     faces = []
 
     image_data = []
-    for i, image_path in enumerate(image_path_list):
+    for i, image_path in enumerate(image_path_list+1):
         image_data.append((i, path, resolution))
 
     faces_and_vertices = []
@@ -441,8 +446,8 @@ def march(path, resolution):
 
     # replace face positions with vertex indices
     face_data = []
-    length = ceil(len(faces_positions) / 32)
-    for i in range(32):
+    length = ceil(len(faces_positions) / 128)
+    for i in range(128):
         face_data.append((faces_positions[i * length:(i + 1) * length], vertices))
 
     with Pool() as p:
