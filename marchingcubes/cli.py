@@ -9,15 +9,16 @@ from marchingcubes.utilities import read_dicom_image, process_image
 @click.command()
 @click.argument('path', type=click.Path(exists=True, file_okay=False, dir_okay=True, writable=True, readable=True), required=True)
 @click.argument('resolution', type=click.INT)
-@click.option('--algorithm', is_flag=True)
-def cli(path, resolution, algorithm):
+def cli(path, resolution):
     image_list = [image for image in os.listdir(path) if image.endswith(('.dcm', '.png'))]
     click.echo("Found {} images in {}" .format(len(image_list), path))
 
-    if not algorithm:
-        for i, image in enumerate(image_list):
+    for i, image in enumerate(image_list):
+
+        if image.endswith('.dcm'):
             png_path = read_dicom_image(os.path.join(path, image))
-            process_image(png_path)
+
+       process_image(png_path)
 
     vertices, faces = march(path, resolution)
     click.echo("Total number of vertices: {}" .format(len(vertices)))
