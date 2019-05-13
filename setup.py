@@ -5,7 +5,7 @@ with open('README.md') as file_object:
 
 setup(name='marching-cubes',
       version='0.0.1',
-      author='Mandeep Bhutani',
+      author='Mandeep Bhutani, Huy Ha, Maddy Placik',
       author_email='mandeep@users.noreply.github.com',
       url='https://github.com/madmanhuy/marching-cubes',
       long_description=description,
