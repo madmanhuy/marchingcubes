@@ -320,7 +320,7 @@ def march_layer(layer, path, resolution):
 
     print(
         "Doing layer {} out of {} with resolution {} for image dimensions {}x{}".format(
-            layer + 1, len(image_list)+1, resolution, width, height
+            layer + 1, len(image_list), resolution, width, height
         )
     )
 
@@ -433,7 +433,7 @@ def march(path, resolution):
     faces = []
 
     image_data = []
-    for i, image_path in enumerate(image_path_list+1):
+    for i, image_path in enumerate(image_path_list):
         image_data.append((i, path, resolution))
 
     faces_and_vertices = []
