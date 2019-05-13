@@ -10,7 +10,7 @@ def main():
 	#path = input("Enter the path of the directory of pngs: ")
 	path = "C:/temp"
 	if(os.path.exists(path)):
-		vertices,faces = MarchingCubes(path,4)
+		vertices,faces = MarchingCubes(path,64)
 		print("total number of vertices:" + str(len(vertices)))
 		print("total number of faces:" + str(len(faces)))
 		print("Writing to output.obj")
@@ -48,34 +48,17 @@ def MarchingCubes(path, res):
 	with Pool() as p:
 		results = p.starmap(MarchLayer,args)
 		for result in results:
+			offset = len(vertices)
 			vertices = vertices + result[0]
-			faces_positions = faces_positions + result[1]
-
-	#replace face positions with vertex indices
-	args = []
-	length = ceil(len(faces_positions)/128)
-	for i in range(128):
-		args.append((faces_positions[i*length:(i+1)*length],vertices))
-	with Pool() as p:
-		#args = (subset_of_face_positions, vertices)
-		faces_results = p.starmap(FindIndices,args)
-		for face in faces_results:
-			faces = faces + face
-
+			new_faces = []
+			for new_face in result[1]:
+				new_face[0] += offset
+				new_face[1] += offset
+				new_face[2] += offset
+				new_face = [round(x) for x in new_face]
+				new_faces.append(new_face)
+			faces = faces + new_faces
 	return vertices,faces;
-
-def FindIndices(face_positions,vertices):
-	faces = []
-	for face_position in face_positions:
-		face = []
-		v0 = vertices.index(face_position[0]) + 1
-		v1 = vertices.index(face_position[1]) + 1
-		v2 = vertices.index(face_position[2]) + 1
-		face.append(v0)
-		face.append(v1)
-		face.append(v2)
-		faces.append(face)
-	return faces
 
 def MarchLayer(layer,path,res):
 	# args = (layer, path)
@@ -411,23 +394,33 @@ def MarchLayer(layer,path,res):
 				fc = 0
 				while fc < len(fVert)/3:
 					face = []
-					face.append(tuple(fVert[fc]))
-					face.append(tuple(fVert[fc + 1]))
-					face.append(tuple(fVert[fc + 2]))
+					face.append(fVert[fc])
+					face.append(fVert[fc + 1])
+					face.append(fVert[fc + 2])
 					faces.append(face)
 					fc += 3
 			j+=res
 		i+=res
-	vertices = set()
+	vertices = []
 	nondegenerate_faces = []
 	for face in faces:
 		if face[0] != face[1] and face[1] != face[2]:
 			nondegenerate_faces.append(face)
 			for vertex in face:
-				vertices.add(tuple(vertex))
-	vertices = list(vertices)
-	# print("for layer {} got {} vertices and {} faces".format(layer,len(vertices),len(faces)))
-	return vertices,nondegenerate_faces;
+				if vertex not in vertices:
+					vertices.append(vertex)
+	faces = nondegenerate_faces
+	faces_indexed = []
+	for face in faces:
+		face_indices = []
+		v0 = vertices.index(face[0]) + 1
+		v1 = vertices.index(face[1]) + 1
+		v2 = vertices.index(face[2]) + 1
+		face_indices.append(v0)
+		face_indices.append(v1)
+		face_indices.append(v2)
+		faces_indexed.append(face_indices)
+	return vertices,faces_indexed;
 
 if __name__ == "__main__": 
 	main()
